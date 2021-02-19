@@ -2,12 +2,11 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatStepper } from '@angular/material/stepper';
 import { BlockUI, NgBlockUI } from 'ng-block-ui';
-import { of } from 'rxjs';
-import { delay, mergeMap } from 'rxjs/operators';
 
 import { CephfsModalComponent } from '~/app/pages/deployment-page/cephfs-modal/cephfs-modal.component';
 import { DialogComponent } from '~/app/shared/components/dialog/dialog.component';
 import { Device, OrchService } from '~/app/shared/services/api/orch.service';
+import { PollService } from '~/app/shared/services/api/poll.service';
 import { ServiceDesc, ServicesService } from '~/app/shared/services/api/services.service';
 import { NotificationService } from '~/app/shared/services/notification.service';
 
@@ -37,12 +36,12 @@ export class DeploymentPageComponent implements OnInit {
     private dialog: MatDialog,
     private notificationService: NotificationService,
     private orchService: OrchService,
-    private services: ServicesService
+    private services: ServicesService,
+    private pollService: PollService
   ) {}
 
   ngOnInit(): void {
-    this.startBlockUI('Please wait, fetching device information ...');
-    this.getDevices(0);
+    this.getDevices();
     this.updateCephfsList();
   }
 
@@ -50,30 +49,34 @@ export class DeploymentPageComponent implements OnInit {
     this.nfs = true;
   }
 
-  getDevices(attempt: number): void {
-    const maxAttempts = 5;
-    of(true)
+  getDevices(): void {
+    this.startBlockUI('Please wait, fetching device information ...');
+    this.orchService
+      .devices()
       .pipe(
-        delay(5000),
-        mergeMap(() => this.orchService.devices())
+        this.pollService.poll(
+          (hostDevices) => {
+            let hasDevices = false;
+            Object.values(hostDevices).forEach((v) => {
+              if (v.devices.length > 0) {
+                hasDevices = true;
+              }
+            });
+            return !hasDevices;
+          },
+          10,
+          'Failed to fetch device information'
+        )
       )
       .subscribe(
         (hostDevices) => {
           Object.values(hostDevices).forEach((v) => {
             this.devices = this.devices.concat(v.devices);
           });
-          if (this.devices.length > 0) {
-            this.stopBlockUI();
-          } else {
-            if (attempt < maxAttempts) {
-              this.getDevices(++attempt);
-            } else {
-              this.handleError(undefined, 'No devices found.');
-            }
-          }
+          this.stopBlockUI();
         },
         (err) => {
-          this.handleError(err, 'Failed to fetch device information.');
+          this.handleError(err);
         }
       );
   }
@@ -103,32 +106,26 @@ export class DeploymentPageComponent implements OnInit {
         if (success) {
           this.pollAssimilationStatus();
         } else {
-          this.handleError(undefined, 'Failed to start device deployment.');
+          this.handleError('Failed to start device deployment.');
         }
       },
-      () => {
-        this.handleError();
+      (err) => {
+        this.handleError(err);
       }
     );
   }
 
   pollAssimilationStatus(): void {
-    of(true)
-      .pipe(
-        delay(5000),
-        mergeMap(() => this.orchService.assimilateStatus())
-      )
+    this.orchService
+      .assimilateStatus()
+      .pipe(this.pollService.poll((res) => !res, undefined, 'Failed to deploy disks.'))
       .subscribe(
-        (success) => {
-          if (success) {
-            this.deploymentStepper.next();
-            this.stopBlockUI();
-          } else {
-            this.pollAssimilationStatus();
-          }
+        (res) => {
+          this.deploymentStepper.next();
+          this.stopBlockUI();
         },
         (err) => {
-          this.handleError(err, 'Failed to deploy devices.');
+          this.handleError(err);
         }
       );
   }
@@ -166,14 +163,11 @@ export class DeploymentPageComponent implements OnInit {
     this.blockUI.stop();
   }
 
-  private handleError(err?: any, message?: string): void {
+  private handleError(err: any): void {
     this.deploymentSuccessful = false;
     this.stopBlockUI();
-
-    if (message) {
-      this.notificationService.show(message, {
-        type: 'error'
-      });
-    }
+    this.notificationService.show(err.toString(), {
+      type: 'error'
+    });
   }
 }
