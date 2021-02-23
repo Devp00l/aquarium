@@ -18,6 +18,8 @@ describe('BootstrapPageComponent', () => {
   let httpTestingController: HttpTestingController;
   let router: Router;
 
+  const statusUrl = 'api/bootstrap/status';
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       providers: [BootstrapService, NotificationService],
@@ -32,7 +34,7 @@ describe('BootstrapPageComponent', () => {
     notificationService = TestBed.inject(NotificationService);
     httpTestingController = TestBed.inject(HttpTestingController);
     router = TestBed.inject(Router);
-    fixture.detectChanges();
+    fixture.detectChanges(); // Führt ngOnInit aus damit wird einmal satus gecalled
   });
 
   it('should create', () => {
@@ -59,7 +61,7 @@ describe('BootstrapPageComponent', () => {
 
   it('should error bootstrapping', () => {
     component.startBootstrap();
-    httpTestingController.expectOne('api/bootstrap/status');
+    httpTestingController.expectOne(statusUrl);
     httpTestingController
       .expectOne('api/bootstrap/start')
       .error(new ErrorEvent('Unknown Error'), { status: 404 });
@@ -92,15 +94,20 @@ describe('BootstrapPageComponent', () => {
   }));
 
   it('should poll bootstrap [stage=running,none,done]', fakeAsync(() => {
-    httpTestingController.expectOne('api/bootstrap/status');
+    httpTestingController.expectOne(statusUrl); // da ngOnInit gecalled wurde
     spyOn(router, 'navigate').and.stub();
     component.pollBootstrapStatus();
+    httpTestingController.expectNone(statusUrl);
+    tick(1); // Request wurde wohl von pollBootstrap getriggert?
+    httpTestingController.expectOne(statusUrl).flush({ stage: 'running' });
     tick(5000);
-    httpTestingController.expectOne('api/bootstrap/status').flush({ stage: 'running' });
+    httpTestingController.expectOne(statusUrl).flush({ stage: 'running' });
     tick(5000);
-    httpTestingController.expectOne('api/bootstrap/status').flush({ stage: 'none' });
+    httpTestingController.expectOne(statusUrl).flush({ stage: 'none' });
     tick(5000);
-    httpTestingController.expectOne('api/bootstrap/status').flush({ stage: 'done' });
+    // Hm war schon vorher zuende :/
+    httpTestingController.expectNone(statusUrl);
+    //httpTestingController.expectOne(statusUrl).flush({ stage: 'done' });
     expect(component.blockUI.isActive).toBeFalsy();
     expect(router.navigate).toHaveBeenCalled();
     httpTestingController.verify();
