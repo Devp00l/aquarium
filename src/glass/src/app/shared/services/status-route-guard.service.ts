@@ -35,51 +35,9 @@ export class StatusRouteGuardService implements CanActivate, CanActivateChild {
         };
         return of(res);
       }),
-      map((res: Status) => {
-        let url: string;
-        let result: boolean | UrlTree;
-        switch (res.node_stage) {
-          case StatusStageEnum.bootstrapping:
-            url = '/installer/create/bootstrap';
-            if (url === state.url) {
-              result = true;
-            } else {
-              result = this.router.parseUrl(url);
-            }
-            break;
-          case StatusStageEnum.bootstrapped:
-            const urls = ['/installer/create/deployment', '/dashboard'];
-            if (urls.includes(state.url)) {
-              result = true;
-            } else {
-              result = this.router.parseUrl(urls[0]);
-            }
-            break;
-          case StatusStageEnum.ready:
-            url = '/dashboard';
-            if (url === state.url) {
-              result = true;
-            } else {
-              result = this.router.parseUrl(url);
-            }
-            break;
-          case StatusStageEnum.none:
-            if (
-              [
-                '/installer/welcome',
-                '/installer/install-mode',
-                '/installer/create/bootstrap'
-              ].includes(state.url)
-            ) {
-              result = true;
-            } else {
-              result = this.router.parseUrl('/installer');
-            }
-            break;
-          default:
-            result = true;
-        }
-        return result;
+      map((res: Status): boolean | UrlTree => {
+        const url = this.isUrlChangeNeeded(res.node_stage, state.url);
+        return url ? this.router.parseUrl(url) : true;
       })
     );
   }
@@ -89,5 +47,24 @@ export class StatusRouteGuardService implements CanActivate, CanActivateChild {
     state: RouterStateSnapshot
   ): Observable<boolean | UrlTree> {
     return this.canActivate(childRoute, state);
+  }
+
+  private isUrlChangeNeeded(stage: number, currentUrl: string): string | undefined {
+    if (stage === StatusStageEnum.none && !currentUrl.startsWith('/installer')) {
+      return '/installer';
+    } else if (stage === StatusStageEnum.bootstrapping) {
+      const url = '/installer/create/bootstrap';
+      if (url !== currentUrl) {
+        return url;
+      }
+    } else if (stage === StatusStageEnum.bootstrapped) {
+      const urls = ['/installer/create/deployment', '/dashboard'];
+      if (!urls.includes(currentUrl)) {
+        return urls[0];
+      }
+    } else if (stage === StatusStageEnum.ready && currentUrl !== '/dashboard') {
+      return '/dashboard';
+    }
+    return undefined;
   }
 }
