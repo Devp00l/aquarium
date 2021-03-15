@@ -7,10 +7,11 @@ import { MaterialModule } from '~/app/material.modules';
 import { DatatableComponent } from '~/app/shared/components/datatable/datatable.component';
 import { DialogComponent } from '~/app/shared/components/dialog/dialog.component';
 import { SubmitButtonComponent } from '~/app/shared/components/submit-button/submit-button.component';
+import { WidgetComponent } from '~/app/shared/components/widget/widget.component';
 
 @NgModule({
-  declarations: [SubmitButtonComponent, DialogComponent, DatatableComponent],
-  exports: [SubmitButtonComponent, DialogComponent, DatatableComponent],
+  declarations: [SubmitButtonComponent, DialogComponent, DatatableComponent, WidgetComponent],
+  exports: [SubmitButtonComponent, DialogComponent, DatatableComponent, WidgetComponent],
   imports: [CommonModule, FlexLayoutModule, MaterialModule, TranslateModule.forChild()]
 })
 export class ComponentsModule {}
