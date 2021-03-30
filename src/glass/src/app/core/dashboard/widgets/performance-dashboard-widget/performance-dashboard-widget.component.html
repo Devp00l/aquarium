@@ -1,0 +1,42 @@
+<glass-widget [loadData]="loadData.bind(this)"
+              title="Performance"
+              [reloadTime]="1000"
+              (loadDataEvent)="updateChartData($event)">
+  <div class="glass-capacity-dashboard-widget"
+       fxLayout="column"
+       fxLayoutAlign="center center">
+    <div fxLayout="row"
+         fxLayoutAlign="center center">
+      <ngx-charts-gauge [results]="chartDataRead"
+                        [view]="[225,225]"
+                        [showAxis]="false"
+                        [tooltipDisabled]="false"
+                        fxFlex="50"
+                        units="Read"
+                        [valueFormatting]="valueFormatting.bind(this)"
+                        [animations]="false">
+      </ngx-charts-gauge>
+      <ngx-charts-gauge [results]="chartDataWrite"
+                        [showAxis]="false"
+                        [tooltipDisabled]="false"
+                        fxFlex="50"
+                        [view]="[225,225]"
+                        units="Write"
+                        [valueFormatting]="valueFormatting.bind(this)"
+                        [animations]="false">
+      </ngx-charts-gauge>
+    </div>
+    <ngx-charts-area-chart-stacked [results]="writeSeries"
+                                   [view]="[700,300]"
+                                   [yAxis]="true"
+                                   [xAxis]="true"
+                                   [legend]="true"
+                                   [showXAxisLabel]="true"
+                                   [showYAxisLabel]="true"
+                                   [tooltipDisabled]="false"
+                                   [timeline]="true"
+                                   [yAxisTickFormatting]="valueFormatting.bind(this)"
+                                   [animations]="false">
+    </ngx-charts-area-chart-stacked>
+  </div>
+</glass-widget>

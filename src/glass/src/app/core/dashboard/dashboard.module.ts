@@ -13,6 +13,7 @@ import { SysInfoDashboardWidgetComponent } from '~/app/core/dashboard/widgets/sy
 import { VolumesDashboardWidgetComponent } from '~/app/core/dashboard/widgets/volumes-dashboard-widget/volumes-dashboard-widget.component';
 import { MaterialModule } from '~/app/material.modules';
 import { SharedModule } from '~/app/shared/shared.module';
+import { PerformanceDashboardWidgetComponent } from './widgets/performance-dashboard-widget/performance-dashboard-widget.component';
 
 @NgModule({
   declarations: [
@@ -21,7 +22,8 @@ import { SharedModule } from '~/app/shared/shared.module';
     HealthDashboardWidgetComponent,
     ServicesDashboardWidgetComponent,
     SysInfoDashboardWidgetComponent,
-    HostsDashboardWidgetComponent
+    HostsDashboardWidgetComponent,
+    PerformanceDashboardWidgetComponent
   ],
   exports: [
     CapacityDashboardWidgetComponent,
@@ -29,7 +31,8 @@ import { SharedModule } from '~/app/shared/shared.module';
     HealthDashboardWidgetComponent,
     ServicesDashboardWidgetComponent,
     SysInfoDashboardWidgetComponent,
-    HostsDashboardWidgetComponent
+    HostsDashboardWidgetComponent,
+    PerformanceDashboardWidgetComponent
   ],
   imports: [
     CommonModule,
