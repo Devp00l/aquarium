@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import * as _ from 'lodash';
-import { EMPTY, interval, Observable, Subscription } from 'rxjs';
+import { EMPTY, Observable, Subscription, timer } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 
 export type WidgetAction = {
@@ -25,7 +25,7 @@ export class WidgetComponent implements OnInit, OnDestroy {
   @Input()
   actionMenu?: WidgetAction[];
   @Input()
-  reloadTime = 15000;
+  reloadTime = 5000;
 
   error = false;
   loading = false;
@@ -38,17 +38,24 @@ export class WidgetComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.reload();
-    const intervalObservable = interval(this.reloadTime);
-    this.intervalSubscription = intervalObservable.subscribe(() => this.reload());
+    setInterval(() => {
+      console.log('interval', this.title);
+      this.reload();
+    }, this.reloadTime);
+    const intervalObservable = timer(0, this.reloadTime);
+    this.intervalSubscription = intervalObservable.subscribe((x) => {
+      console.log(x, this.title);
+      this.reload();
+    });
   }
 
   ngOnDestroy(): void {
+    console.log('i will destroy', this.title);
     this.refreshDataSubscription?.unsubscribe();
     this.intervalSubscription?.unsubscribe();
   }
 
   reload(): void {
-    console.log('in', this.reloadTime);
     if (!this.loadData) {
       throw new Error('loadData attribute not set');
     }
@@ -72,7 +79,6 @@ export class WidgetComponent implements OnInit, OnDestroy {
         })
       )
       .subscribe((data) => {
-        console.log('out', this.reloadTime);
         this.data = data;
         this.loadDataEvent.emit(data);
       });
