@@ -50,6 +50,7 @@ usage() {
 usage: $(basename $0) [options]
 
 options:
+  --force                 Install even if user is root
   --show-dependencies     Show required dependencies.
   --skip-install-deps     Skip installing dependencies.
   -h|--help               This message.
@@ -67,6 +68,7 @@ yes_no() {
     done
 }
 
+force=false
 skip_install_deps=false
 show_dependencies=false
 
@@ -78,6 +80,9 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-install-deps)
       skip_install_deps=true
+      ;;
+    --force)
+      force=true
       ;;
     -h|--help)
       usage
@@ -92,9 +97,9 @@ while [[ $# -gt 0 ]]; do
   shift 1
 done
 
-if [ "$(id -u)" -eq 0 ]; then
-	echo error: please do not run this script as root
-	exit 1
+if [ "$(id -u)" -eq 0 ] && [ $force = false ]; then
+  echo error: Please do not run this script as root if you have to use '--force'
+  exit 1
 fi
 
 osid=$(grep '^ID=' /etc/os-release | sed -e 's/\(ID=["]*\)\(.\+\)/\2/' | tr -d '"')
